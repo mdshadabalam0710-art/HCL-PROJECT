@@ -1,0 +1,102 @@
+// ==============================================================================
+// Power BI DAX Measures: Customer Segmentation using RFM
+// Table Name: 'rfm_segments'
+// ==============================================================================
+
+// ------------------------------------------------------------------------------
+// 1. CORE VOLUME & REVENUE MEASURES
+// ------------------------------------------------------------------------------
+
+Total Customers = 
+DISTINCTCOUNT(rfm_segments[CustomerID])
+
+Total Revenue = 
+SUM(rfm_segments[Monetary])
+
+Gross Revenue = 
+SUM(rfm_segments[Gross_Purchases])
+
+Total Refunds = 
+SUM(rfm_segments[Total_Refunds])
+
+Refund Rate (%) = 
+DIVIDE([Total Refunds], [Gross Revenue], 0)
+
+// ------------------------------------------------------------------------------
+// 2. CORE AVERAGE RFM METRICS
+// ------------------------------------------------------------------------------
+
+Avg Recency = 
+AVERAGE(rfm_segments[Recency])
+
+Avg Frequency = 
+AVERAGE(rfm_segments[Frequency])
+
+Avg Monetary = 
+AVERAGE(rfm_segments[Monetary])
+
+// ------------------------------------------------------------------------------
+// 3. SEGMENT PERCENTAGE & DISTRIBUTION MEASURES
+// ------------------------------------------------------------------------------
+
+// Percent of customers in the active/selected filter context relative to all customers
+% of Customers by Segment = 
+DIVIDE(
+    [Total Customers],
+    CALCULATE([Total Customers], ALLSELECTED(rfm_segments)),
+    0
+)
+
+// Percent of net revenue contributed by the active segment
+% of Revenue by Segment = 
+DIVIDE(
+    [Total Revenue],
+    CALCULATE([Total Revenue], ALLSELECTED(rfm_segments)),
+    0
+)
+
+// ------------------------------------------------------------------------------
+// 4. ACTIONABLE SEGMENT COUNTS (FOR KPI CARDS)
+// ------------------------------------------------------------------------------
+
+Champions Count = 
+CALCULATE(
+    [Total Customers],
+    rfm_segments[Segment] = "Champions"
+)
+
+At Risk Count = 
+CALCULATE(
+    [Total Customers],
+    rfm_segments[Segment] = "At Risk"
+)
+
+Can't Lose Them Count = 
+CALCULATE(
+    [Total Customers],
+    rfm_segments[Segment] = "Can't Lose Them"
+)
+
+Lost Count = 
+CALCULATE(
+    [Total Customers],
+    rfm_segments[Segment] = "Lost"
+)
+
+High Value Churn Risk Revenue = 
+CALCULATE(
+    [Total Revenue],
+    rfm_segments[Segment] IN {"At Risk", "Can't Lose Them"}
+)
+
+// ------------------------------------------------------------------------------
+// 5. DYNAMIC FORMATTING STRINGS & TOOLTIPS
+// ------------------------------------------------------------------------------
+
+Segment Summary Tooltip = 
+"Segment: " & SELECTEDVALUE(rfm_segments[Segment], "Multiple") & UNICHAR(10) &
+"Customers: " & FORMAT([Total Customers], "#,##0") & " (" & FORMAT([% of Customers by Segment], "0.0%") & ")" & UNICHAR(10) &
+"Revenue: " & FORMAT([Total Revenue], "$#,##0") & " (" & FORMAT([% of Revenue by Segment], "0.0%") & ")" & UNICHAR(10) &
+"Avg Recency: " & FORMAT([Avg Recency], "0.0") & " days" & UNICHAR(10) &
+"Avg Frequency: " & FORMAT([Avg Frequency], "0.0") & " orders" & UNICHAR(10) &
+"Avg Ticket (Monetary): " & FORMAT([Avg Monetary], "$#,##0.00")
